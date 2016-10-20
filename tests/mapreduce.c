@@ -74,8 +74,8 @@ int main(int argc, char *argv[])
 
     clock_gettime(CLOCK_REALTIME, &end);
     cpu_time1 = diff_in_second(start, end);
-    fprintf(stderr, "map : %lf\n", cpu_time1);
-    
+    fprintf(stderr, "map : %lf sec\n", cpu_time1);
+
     for (int i = 0; i < DATASIZE; i++)
         printf("%c", !!data[i] ? '-' : ' ');
     printf("\n");
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
 
     clock_gettime(CLOCK_REALTIME, &end);
     cpu_time2 = diff_in_second(start, end);
-    fprintf(stderr, "reduce : %lf\n", cpu_time2);
+    fprintf(stderr, "reduce : %lf sec\n", cpu_time2);
 
     return 0;
 }

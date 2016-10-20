@@ -188,6 +188,22 @@ int threadpool_add(threadpool_t *pool, void (*function)(void *),
         pool->tail = next;
         pool->count += 1;
 
+        
+        int tmp = pool->count - pool->thread_count;
+        if(tmp > 0){
+            pool->threads = (pthread_t *)realloc(pool->threads, sizeof(pthread_t) * (pool->thread_count + tmp));
+            for(int i=0; i<tmp; i++){
+                if(pthread_create(&(pool->threads[pool->thread_count + i]), NULL,
+                                  threadpool_thread, (void*)pool) != 0) {
+                    threadpool_destroy(pool, 0);
+                    err = threadpool_thread_failure;
+                    break;
+                }
+                pool->thread_count++;
+                pool->started++;
+            }
+        }
+
         /* pthread_cond_broadcast */
         if(pthread_cond_signal(&(pool->notify)) != 0) {
             err = threadpool_lock_failure;
