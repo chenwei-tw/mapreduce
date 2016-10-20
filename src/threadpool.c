@@ -385,7 +385,6 @@ static void threadpool_map_thread(void *arg)
         start += additional_items;
     }
     end += start;
-
     for (; start < end; start++)
         map->routine(start, map->arg);
 

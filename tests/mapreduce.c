@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 #include "threadpool.h"
 
 void is_simple(int n, void *_data)
@@ -40,8 +41,23 @@ void my_finish(void *self, void *node)
     printf("reduce result = %d\n", *(int *) node);
 }
 
+static double diff_in_second(struct timespec t1, struct timespec t2)
+{
+    struct timespec diff;
+    if (t2.tv_nsec-t1.tv_nsec < 0) {
+        diff.tv_sec  = t2.tv_sec - t1.tv_sec - 1;
+        diff.tv_nsec = t2.tv_nsec - t1.tv_nsec + 1000000000;
+    } else {
+        diff.tv_sec  = t2.tv_sec - t1.tv_sec;
+        diff.tv_nsec = t2.tv_nsec - t1.tv_nsec;
+    }
+    return (diff.tv_sec + diff.tv_nsec / 1000000000.0);
+}
+
 int main(int argc, char *argv[])
 {
+    struct timespec start, end;
+    double cpu_time1, cpu_time2;
     threadpool_t *pool;
 
     pool = threadpool_create(THREAD, QUEUE, 0);
@@ -52,11 +68,20 @@ int main(int argc, char *argv[])
     for (int i = 0; i < DATASIZE; i++)
         data[i] = i + 1;
 
+    clock_gettime(CLOCK_REALTIME, &start);
+
     threadpool_map(pool, DATASIZE, is_simple, data, 0);
+
+    clock_gettime(CLOCK_REALTIME, &end);
+    cpu_time1 = diff_in_second(start, end);
+    fprintf(stderr, "map : %lf\n", cpu_time1);
+    
     for (int i = 0; i < DATASIZE; i++)
         printf("%c", !!data[i] ? '-' : ' ');
     printf("\n");
 
+
+    clock_gettime(CLOCK_REALTIME, &start);
     threadpool_reduce_t reduce = {
         .begin = data,
         .end = data + DATASIZE,
@@ -69,6 +94,10 @@ int main(int argc, char *argv[])
     };
 
     threadpool_reduce(pool, &reduce);
+
+    clock_gettime(CLOCK_REALTIME, &end);
+    cpu_time2 = diff_in_second(start, end);
+    fprintf(stderr, "reduce : %lf\n", cpu_time2);
 
     return 0;
 }
