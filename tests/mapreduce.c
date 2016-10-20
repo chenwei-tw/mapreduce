@@ -14,7 +14,8 @@ void is_simple(int n, void *_data)
     int x = data[n];
     data[n] = 0;
     if (x < 2) return;
-    for (int i = 2; i < x; i++)
+    if (x > 2 && x % 2 == 0) return;
+    for (int i = 3; i * i <= x; i += 2)
         if (x % i == 0) return;
     data[n] = x;
 }
