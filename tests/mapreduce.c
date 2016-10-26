@@ -7,9 +7,14 @@
 #include <unistd.h>
 #include <time.h>
 #include "threadpool.h"
+#include "yastopwatch.h"
+
+DEF_THREADED_SW(simple_time)
 
 void is_simple(int n, void *_data)
 {
+    START_SW(simple_time);
+
     int *data = (int *) _data;
     int x = data[n];
     data[n] = 0;
@@ -18,6 +23,9 @@ void is_simple(int n, void *_data)
     for (int i = 3; i * i <= x; i += 2)
         if (x % i == 0) return;
     data[n] = x;
+
+    STOP_SW(simple_time);
+    SYNC_SW(simple_time);
 }
 
 void my_reduce(void *self, void *left, void *right)
@@ -42,23 +50,10 @@ void my_finish(void *self, void *node)
     printf("reduce result = %d\n", *(int *) node);
 }
 
-static double diff_in_second(struct timespec t1, struct timespec t2)
-{
-    struct timespec diff;
-    if (t2.tv_nsec-t1.tv_nsec < 0) {
-        diff.tv_sec  = t2.tv_sec - t1.tv_sec - 1;
-        diff.tv_nsec = t2.tv_nsec - t1.tv_nsec + 1000000000;
-    } else {
-        diff.tv_sec  = t2.tv_sec - t1.tv_sec;
-        diff.tv_nsec = t2.tv_nsec - t1.tv_nsec;
-    }
-    return (diff.tv_sec + diff.tv_nsec / 1000000000.0);
-}
-
 int main(int argc, char *argv[])
 {
-    struct timespec start, end;
-    double cpu_time1, cpu_time2;
+    DEF_SW(map_time);
+    DEF_SW(reduce_time);
     threadpool_t *pool;
 
     pool = threadpool_create(THREAD, QUEUE, 0);
@@ -69,20 +64,18 @@ int main(int argc, char *argv[])
     for (int i = 0; i < DATASIZE; i++)
         data[i] = i + 1;
 
-    clock_gettime(CLOCK_REALTIME, &start);
+    START_SW(map_time);
 
     threadpool_map(pool, DATASIZE, is_simple, data, 0);
 
-    clock_gettime(CLOCK_REALTIME, &end);
-    cpu_time1 = diff_in_second(start, end);
-    fprintf(stderr, "map : %lf sec\n", cpu_time1);
+    STOP_SW(map_time);
 
     for (int i = 0; i < DATASIZE; i++)
         printf("%c", !!data[i] ? '-' : ' ');
     printf("\n");
 
+    START_SW(reduce_time);
 
-    clock_gettime(CLOCK_REALTIME, &start);
     threadpool_reduce_t reduce = {
         .begin = data,
         .end = data + DATASIZE,
@@ -96,9 +89,11 @@ int main(int argc, char *argv[])
 
     threadpool_reduce(pool, &reduce);
 
-    clock_gettime(CLOCK_REALTIME, &end);
-    cpu_time2 = diff_in_second(start, end);
-    fprintf(stderr, "reduce : %lf sec\n", cpu_time2);
+    STOP_SW(reduce_time);
+
+    fprintf(stderr, "[map] Total time: %lf\n", GET_SEC(map_time));
+    fprintf(stderr, "[is_simple] Total time: %lf\n", GET_SEC(simple_time));
+    fprintf(stderr, "[reduce] Total time: %lf\n", GET_SEC(reduce_time));
 
     return 0;
 }

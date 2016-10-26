@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 2016, Mathias Brossard <mathias@brossard.org>.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
- * 
+ *
  *  1. Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- * 
+ *
  *  2. Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -73,17 +73,17 @@ typedef struct {
  *  @var started      Number of started threads
  */
 struct threadpool_t {
-  pthread_mutex_t lock;
-  pthread_cond_t notify;
-  pthread_t *threads;
-  threadpool_task_t *queue;
-  int thread_count;
-  int queue_size;
-  int head;
-  int tail;
-  int count;
-  int shutdown;
-  int started;
+    pthread_mutex_t lock;
+    pthread_cond_t notify;
+    pthread_t *threads;
+    threadpool_task_t *queue;
+    int thread_count;
+    int queue_size;
+    int head;
+    int tail;
+    int count;
+    int shutdown;
+    int started;
 };
 
 /**
@@ -122,13 +122,13 @@ threadpool_t *threadpool_create(int thread_count, int queue_size, int flags)
     /* Allocate thread and task queue */
     pool->threads = (pthread_t *)malloc(sizeof(pthread_t) * thread_count);
     pool->queue = (threadpool_task_t *)malloc
-        (sizeof(threadpool_task_t) * queue_size);
+                  (sizeof(threadpool_task_t) * queue_size);
 
     /* Initialize mutex and conditional variable first */
     if((pthread_mutex_init(&(pool->lock), NULL) != 0) ||
-       (pthread_cond_init(&(pool->notify), NULL) != 0) ||
-       (pool->threads == NULL) ||
-       (pool->queue == NULL)) {
+            (pthread_cond_init(&(pool->notify), NULL) != 0) ||
+            (pool->threads == NULL) ||
+            (pool->queue == NULL)) {
         goto err;
     }
 
@@ -145,7 +145,7 @@ threadpool_t *threadpool_create(int thread_count, int queue_size, int flags)
 
     return pool;
 
- err:
+err:
     if(pool) {
         threadpool_free(pool);
     }
@@ -188,22 +188,6 @@ int threadpool_add(threadpool_t *pool, void (*function)(void *),
         pool->tail = next;
         pool->count += 1;
 
-        
-        int tmp = pool->count - pool->thread_count;
-        if(tmp > 0){
-            pool->threads = (pthread_t *)realloc(pool->threads, sizeof(pthread_t) * (pool->thread_count + tmp));
-            for(int i=0; i<tmp; i++){
-                if(pthread_create(&(pool->threads[pool->thread_count + i]), NULL,
-                                  threadpool_thread, (void*)pool) != 0) {
-                    threadpool_destroy(pool, 0);
-                    err = threadpool_thread_failure;
-                    break;
-                }
-                pool->thread_count++;
-                pool->started++;
-            }
-        }
-
         /* pthread_cond_broadcast */
         if(pthread_cond_signal(&(pool->notify)) != 0) {
             err = threadpool_lock_failure;
@@ -238,11 +222,11 @@ int threadpool_destroy(threadpool_t *pool, int flags)
         }
 
         pool->shutdown = (flags & threadpool_graceful) ?
-            graceful_shutdown : immediate_shutdown;
+                         graceful_shutdown : immediate_shutdown;
 
         /* Wake up all worker threads */
         if((pthread_cond_broadcast(&(pool->notify)) != 0) ||
-           (pthread_mutex_unlock(&(pool->lock)) != 0)) {
+                (pthread_mutex_unlock(&(pool->lock)) != 0)) {
             err = threadpool_lock_failure;
             break;
         }
@@ -272,7 +256,7 @@ int threadpool_free(threadpool_t *pool)
     if(pool->threads) {
         free(pool->threads);
         free(pool->queue);
- 
+
         /* Because we allocate pool->threads after initializing the
            mutex and condition variable, we're sure they're
            initialized. Let's lock the mutex just in case. */
@@ -280,7 +264,7 @@ int threadpool_free(threadpool_t *pool)
         pthread_mutex_destroy(&(pool->lock));
         pthread_cond_destroy(&(pool->notify));
     }
-    free(pool);    
+    free(pool);
     return 0;
 }
 
@@ -296,7 +280,7 @@ typedef struct {
 static void threadpool_map_thread(void *arg);
 
 int threadpool_map(threadpool_t *pool, int size, void(*routine)(int n, void *),
-	void *arg, int flags)
+                   void *arg, int flags)
 {
     threadpool_error_t err = 0;
     threadpool_map_t map = {
@@ -307,14 +291,14 @@ int threadpool_map(threadpool_t *pool, int size, void(*routine)(int n, void *),
     };
 
     sem_init(&map.done_indicator, 0, 0);
-	
+
     for (int i = 0; i < pool->thread_count; i++)
         map.personal_pointers[i] = i;
 
     for (int i = 0; i < pool->thread_count; i++) {
         threadpool_error_t _err = threadpool_add(pool, threadpool_map_thread,
-                                                 &map.personal_pointers[i],
-                                                 flags);
+                                  &map.personal_pointers[i],
+                                  flags);
         /* FIXME: check errors correctly */
         if (_err) {
             err = _err;
@@ -342,7 +326,7 @@ int threadpool_reduce(threadpool_t *pool, threadpool_reduce_t *reduce)
 {
     reduce_t_internal info = {
         .size = ((char *) reduce->end -
-                 (char *) reduce->begin) / reduce->object_size,
+        (char *) reduce->begin) / reduce->object_size,
         .thread_count = pool->thread_count,
         .userdata = reduce,
     };
@@ -370,8 +354,7 @@ static void threadpool_reduce_thread(int n, void *arg)
     if (n <= additional_items)	{
         start += n;
         if (n < additional_items) end++;
-    }
-    else {
+    } else {
         start += additional_items;
     }
     end += start;
@@ -379,10 +362,10 @@ static void threadpool_reduce_thread(int n, void *arg)
     info->elements[n] = info->userdata->reduce_alloc_neutral(info->userdata);
 
     for (; start < end; start++) {
-        info->userdata->reduce(info->userdata->self, info->elements[n], 
+        info->userdata->reduce(info->userdata->self, info->elements[n],
                                (char *) info->userdata->begin +
                                start * info->userdata->object_size);
-	}
+    }
 }
 
 static void threadpool_map_thread(void *arg)
@@ -392,19 +375,19 @@ static void threadpool_map_thread(void *arg)
     int end = map->size / map->thread_count;
     int additional_items = map->size - end * map->thread_count;
     int start = end * id;
-	
+
     if (id <= additional_items)	{
         start += id;
         if (id < additional_items) end++;
-    }
-    else {
+    } else {
         start += additional_items;
     }
     end += start;
+
     for (; start < end; start++)
         map->routine(start, map->arg);
 
-    sem_post(&map->done_indicator);	
+    sem_post(&map->done_indicator);
 }
 
 static void *threadpool_thread(void *threadpool)
@@ -423,8 +406,8 @@ static void *threadpool_thread(void *threadpool)
         }
 
         if((pool->shutdown == immediate_shutdown) ||
-           ((pool->shutdown == graceful_shutdown) &&
-            (pool->count == 0))) {
+                ((pool->shutdown == graceful_shutdown) &&
+                 (pool->count == 0))) {
             break;
         }
 
