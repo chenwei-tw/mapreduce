@@ -43,7 +43,7 @@ $(LIBNAME)$(STATIC_SUFFIX): $(OBJS)
 	$(AR) rcs $@ $^
 
 clean:
-	rm -f $(TARGETS) *~ */*~ $(OBJS) $(TESTS) $(deps)
+	rm -f $(TARGETS) *~ */*~ $(OBJS) $(TESTS) $(deps) core
 
 test: check
 check: $(TESTS)

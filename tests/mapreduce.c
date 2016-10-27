@@ -1,6 +1,6 @@
 #define THREAD 8
-#define QUEUE  256
-#define DATASIZE (20000)
+#define QUEUE 256
+#define DATASIZE (2000000)
 
 #include <stdio.h>
 #include <stdlib.h>

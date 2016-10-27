@@ -300,7 +300,9 @@ int threadpool_map(threadpool_t *pool, int size, void(*routine)(int n, void *),
                                   &map.personal_pointers[i],
                                   flags);
         /* FIXME: check errors correctly */
-        if (_err) {
+        if (_err == threadpool_queue_full) {
+            i--;
+        } else if (_err) {
             err = _err;
             sem_post(&map.done_indicator);
         }
