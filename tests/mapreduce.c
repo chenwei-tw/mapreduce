@@ -7,13 +7,20 @@
 #include <unistd.h>
 #include <time.h>
 #include "threadpool.h"
+
+#ifdef PROFILE
 #include "yastopwatch.h"
 
 DEF_THREADED_SW(simple_time)
+DEF_SW(map_time)
+DEF_SW(reduce_time)
+#endif
 
 void is_simple(int n, void *_data)
 {
+#ifdef PROFILE
     START_SW(simple_time);
+#endif
 
     int *data = (int *) _data;
     int x = data[n];
@@ -24,8 +31,10 @@ void is_simple(int n, void *_data)
         if (x % i == 0) return;
     data[n] = x;
 
+#ifdef PROFILE
     STOP_SW(simple_time);
     SYNC_SW(simple_time);
+#endif
 }
 
 void my_reduce(void *self, void *left, void *right)
@@ -52,8 +61,6 @@ void my_finish(void *self, void *node)
 
 int main(int argc, char *argv[])
 {
-    DEF_SW(map_time);
-    DEF_SW(reduce_time);
     threadpool_t *pool;
 
     pool = threadpool_create(THREAD, QUEUE, 0);
@@ -64,17 +71,23 @@ int main(int argc, char *argv[])
     for (int i = 0; i < DATASIZE; i++)
         data[i] = i + 1;
 
+#ifdef PROFILE
     START_SW(map_time);
+#endif
 
     threadpool_map(pool, DATASIZE, is_simple, data, 0);
 
+#ifdef PROFILE
     STOP_SW(map_time);
+#endif
 
     for (int i = 0; i < DATASIZE; i++)
         printf("%c", !!data[i] ? '-' : ' ');
     printf("\n");
 
+#ifdef PROFILE
     START_SW(reduce_time);
+#endif
 
     threadpool_reduce_t reduce = {
         .begin = data,
@@ -89,11 +102,13 @@ int main(int argc, char *argv[])
 
     threadpool_reduce(pool, &reduce);
 
+#ifdef PROFILE
     STOP_SW(reduce_time);
 
     fprintf(stderr, "[map] Total time: %lf\n", GET_SEC(map_time));
     fprintf(stderr, "[is_simple] Total time: %lf\n", GET_SEC(simple_time));
     fprintf(stderr, "[reduce] Total time: %lf\n", GET_SEC(reduce_time));
+#endif
 
     return 0;
 }

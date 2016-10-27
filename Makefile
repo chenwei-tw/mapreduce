@@ -1,6 +1,6 @@
 CFLAGS := -D_REENTRANT -Wall -pedantic -Isrc
 CFLAGS += -fPIC
-LDFLAGS = -lpthread
+LDFLAGS = -lpthread -rdynamic
 
 LIBNAME = libthreadpool
 SHARED_SUFFIX = .so
@@ -8,7 +8,10 @@ STATIC_SUFFIX = .a
 
 ifdef DEBUG
 CFLAGS += -g
-LDFLAGS += -g
+endif
+
+ifeq ($(strip $(PROFILE)),1)
+CFLAGS += -DPROFILE
 endif
 
 SHARED = $(LIBNAME)$(SHARED_SUFFIX)
