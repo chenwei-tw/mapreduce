@@ -21,6 +21,7 @@ void dummy_task(void *arg) {
 int main(int argc, char **argv)
 {
     threadpool_t *pool;
+    int tmp_done;
 
     pthread_mutex_init(&lock, NULL);
 
@@ -29,15 +30,20 @@ int main(int argc, char **argv)
             "queue size of %d\n", THREAD, QUEUE);
 
     while(threadpool_add(pool, &dummy_task, NULL, 0) == 0) {
-        pthread_mutex_lock(&lock);
         tasks++;
-        pthread_mutex_unlock(&lock);
     }
 
     fprintf(stderr, "Added %d tasks\n", tasks);
 
-    while((tasks / 2) > done) {
+    pthread_mutex_lock(&lock);
+    tmp_done = done;
+    pthread_mutex_unlock(&lock);
+
+    while((tasks / 2) > tmp_done) {
         usleep(10000);
+        pthread_mutex_lock(&lock);
+        tmp_done = done;
+        pthread_mutex_unlock(&lock);
     }
     assert(threadpool_destroy(pool, 0) == 0);
     fprintf(stderr, "Did %d tasks\n", done);
