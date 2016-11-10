@@ -62,9 +62,9 @@ void my_finish(void *self, void *node)
 
 int main(int argc, char *argv[])
 {
-    threadpool_t *pool;
+    void *pool;
 
-    pool = threadpool_create(THREAD, QUEUE, 0);
+    pool = tpool_init(THREAD);
     fprintf(stderr, "Pool started with %d threads and "
             "queue size of %d\n", THREAD, QUEUE);
 
@@ -82,11 +82,11 @@ int main(int argc, char *argv[])
     STOP_SW(map_time);
 #endif
 
-    //check data 
+    //check data
     for (int i = 0; i < DATASIZE; i++)
         printf("%c", !!data[i] ? '-' : ' ');
     printf("\n");
-    
+
 #ifdef PROFILE
     START_SW(reduce_time);
 #endif
@@ -112,7 +112,7 @@ int main(int argc, char *argv[])
     fprintf(stderr, "[reduce] Total time: %lf\n", GET_SEC(reduce_time));
 #endif
 
-    assert(threadpool_destroy(pool , 0) == 0);
+    tpool_destroy(pool , 0);
     free(data);
 
     return 0;
