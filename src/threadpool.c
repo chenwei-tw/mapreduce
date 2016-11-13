@@ -20,6 +20,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <assert.h>
+#include <stdatomic.h>
 #include "threadpool.h"
 
 #include <semaphore.h>
@@ -50,7 +51,7 @@ enum {
  * worker thread during balancing thread load when new threads are added
  * to our thread pool...
 */
-#define thread_out_val(thread)      (__sync_val_compare_and_swap(&(thread)->out, 0, 0))
+#define thread_out_val(thread)      (atomic_load(&(thread)->out))
 #define thread_queue_len(thread)   ((thread)->in - thread_out_val(thread))
 #define thread_queue_empty(thread) (thread_queue_len(thread) == 0)
 #define thread_queue_full(thread)  (thread_queue_len(thread) == WORK_QUEUE_SIZE)
@@ -151,7 +152,7 @@ static tpool_work_t *get_work_concurrently(thread_t *thread)
         tmp = thread->out;
         //prefetch work
         work = &thread->work_queue[queue_offset(tmp)];
-    } while (!__sync_bool_compare_and_swap(&thread->out, tmp, tmp + 1));
+    } while (!atomic_compare_exchange_strong(&thread->out, &tmp, tmp + 1));
     return work;
 }
 
@@ -162,7 +163,7 @@ static void *tpool_thread(void *arg)
     sigset_t zeromask, newmask, oldmask;
 
     /* SIGUSR1 handler has been set in tpool_init */
-    __sync_fetch_and_add(&global_num_thread, 1);
+    atomic_fetch_add(&global_num_thread, 1);
     pthread_kill(main_tid, SIGUSR1);
     sigemptyset(&zeromask);
     sigemptyset(&newmask);
