@@ -2,12 +2,13 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <assert.h>
+#include <stdatomic.h>
 
 #include "threadpool.h"
 
 #define THREAD 4
-#define SIZE   8
-#define QUEUES 64
+#define SIZE   8192
+#define QUEUES 4
 
 /*
  * Warning do not increase THREAD and QUEUES too much on 32-bit
@@ -18,7 +19,6 @@
 
 void *pool[QUEUES];
 int tasks[SIZE], left;
-pthread_mutex_t lock;
 
 int error;
 
@@ -30,9 +30,7 @@ void dummy_task(void *arg)
     if(*pi < QUEUES) {
         assert(tpool_add_work(pool[*pi], &dummy_task, arg) == 0);
     } else {
-        pthread_mutex_lock(&lock);
-        left--;
-        pthread_mutex_unlock(&lock);
+        atomic_fetch_sub(&left, 1);
     }
 }
 
@@ -41,7 +39,6 @@ int main(int argc, char **argv)
     int i, copy = 1;
 
     left = SIZE;
-    pthread_mutex_init(&lock, NULL);
 
     for(i = 0; i < QUEUES; i++) {
         pool[i] = tpool_init(THREAD);
@@ -56,17 +53,13 @@ int main(int argc, char **argv)
     }
 
     while(copy > 0) {
-        usleep(10);
-        pthread_mutex_lock(&lock);
-        copy = left;
-        pthread_mutex_unlock(&lock);
+        usleep(1);
+        atomic_store(&copy, left);
     }
 
     for(i = 0; i < QUEUES; i++) {
         tpool_destroy(pool[i], 0);
     }
-
-    pthread_mutex_destroy(&lock);
 
     return 0;
 }

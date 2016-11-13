@@ -337,7 +337,7 @@ static int get_first_id(int arr[], int len, int (*fun)(int))
 static void balance_thread_load(tpool_t *tpool)
 {
     int count[MAX_THREAD_NUM];
-    int i, out, sum = 0, avg;
+    int i, sum = 0, avg;
     int first_neg_id, first_pos_id, tmp, migrate_num;
     thread_t *from, *to;
     tpool_work_t *work;

@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <assert.h>
+#include <stdatomic.h>
 
 #include "threadpool.h"
 
@@ -10,23 +11,18 @@
 
 void *pool;
 int left;
-pthread_mutex_t lock;
 
 int error;
 
 void dummy_task(void *arg)
 {
     usleep(100);
-    pthread_mutex_lock(&lock);
-    left--;
-    pthread_mutex_unlock(&lock);
+    atomic_fetch_sub(&left, 1);
 }
 
 int main(int argc, char **argv)
 {
     int i;
-
-    pthread_mutex_init(&lock, NULL);
 
     /* Testing immediate shutdown */
     left = SIZE;
@@ -45,8 +41,6 @@ int main(int argc, char **argv)
     }
     tpool_destroy(pool, 1);
     assert(left == 0);
-
-    pthread_mutex_destroy(&lock);
 
     return 0;
 }

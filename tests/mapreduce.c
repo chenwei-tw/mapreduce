@@ -83,9 +83,9 @@ int main(int argc, char *argv[])
 #endif
 
     //check data
-    for (int i = 0; i < DATASIZE; i++)
-        printf("%c", !!data[i] ? '-' : ' ');
-    printf("\n");
+    // for (int i = 0; i < DATASIZE; i++)
+    //     printf("%c", !!data[i] ? '-' : ' ');
+    // printf("\n");
 
 #ifdef PROFILE
     START_SW(reduce_time);

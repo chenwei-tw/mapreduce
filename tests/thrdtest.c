@@ -5,26 +5,22 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <assert.h>
+#include <stdatomic.h>
 
 #include "threadpool.h"
 
 int tasks = 0, done = 0;
-pthread_mutex_t lock;
 
 void dummy_task(void *arg)
 {
     usleep(10000);
-    pthread_mutex_lock(&lock);
-    done++;
-    pthread_mutex_unlock(&lock);
+    atomic_fetch_sub(&done, 1);
 }
 
 int main(int argc, char **argv)
 {
     void *pool;
     int tmp_done;
-
-    pthread_mutex_init(&lock, NULL);
 
     assert((pool = tpool_init(THREAD)) != NULL);
     fprintf(stderr, "Pool started with %d threads and "
@@ -36,15 +32,11 @@ int main(int argc, char **argv)
 
     fprintf(stderr, "Added %d tasks\n", tasks);
 
-    pthread_mutex_lock(&lock);
-    tmp_done = done;
-    pthread_mutex_unlock(&lock);
+    atomic_store(&tmp_done, done);
 
     while((tasks / 2) > tmp_done) {
         usleep(10000);
-        pthread_mutex_lock(&lock);
-        tmp_done = done;
-        pthread_mutex_unlock(&lock);
+        atomic_store(&tmp_done, done);
     }
     tpool_destroy(pool, 0);
     fprintf(stderr, "Did %d tasks\n", done);

@@ -31,8 +31,8 @@ tests/%: tests/%.c $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 TESTS =
-TESTS += tests/shutdown
-TESTS += tests/thrdtest
+#TESTS += tests/shutdown
+#TESTS += tests/thrdtest
 #TESTS += tests/heavy
 TESTS += tests/mapreduce
 
