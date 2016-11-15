@@ -37,7 +37,6 @@
 #include <semaphore.h>
 
 #include "threadpool.h"
-#define THREADS_MAX 255
 
 typedef enum {
     immediate_shutdown = 1,
@@ -102,8 +101,7 @@ threadpool_t *threadpool_create(int thread_count, int queue_size, int flags)
     (void) flags;
 
     if(thread_count <= 0 || thread_count > MAX_THREADS \
-		|| thread_count > THREADS_MAX \
-		|| queue_size <= 0 || queue_size > MAX_QUEUE) {
+            || queue_size <= 0 || queue_size > MAX_QUEUE) {
         return NULL;
     }
 
@@ -267,7 +265,7 @@ int threadpool_free(threadpool_t *pool)
 }
 
 typedef struct {
-    int personal_pointers[THREADS_MAX];
+    int personal_pointers[MAX_THREADS];
     void(*routine)(int n, void *);
     void *arg;
     int size;
@@ -317,7 +315,7 @@ typedef struct {
     threadpool_reduce_t *userdata;
     int size;
     int thread_count;
-    void *elements[THREADS_MAX];
+    void *elements[MAX_THREADS];
 } reduce_t_internal;
 
 static void threadpool_reduce_thread(int n, void *arg);
