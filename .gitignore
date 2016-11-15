@@ -7,3 +7,4 @@ tests/heavy
 tests/shutdown
 tests/thrdtest
 tests/mapreduce
+tests/sort
