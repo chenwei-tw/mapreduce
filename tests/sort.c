@@ -1,6 +1,3 @@
-#define THREAD 8
-#define QUEUE 256
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -120,12 +117,14 @@ int main(int argc, char *argv[])
     FILE *input_fptr;
     int i;
 
-    if (argc != 2) {
-        fprintf(stderr, "./sort data_size\n");
+    if (argc != 4) {
+        fprintf(stderr, "./sort [thread_counts] [queue_size] [data_size]\n");
         return -1;
     }
 
-    const int data_size = atoi(argv[1]);
+    const int threads = atoi(argv[1]);
+    const int queue_size = atoi(argv[2]);
+    const int data_size = atoi(argv[3]);
 
     data = malloc(data_size * sizeof(llist_t *));
     srand(time(NULL));
@@ -148,7 +147,7 @@ int main(int argc, char *argv[])
 
     fclose(input_fptr);
 
-    pool = threadpool_create(THREAD, QUEUE, 0);
+    pool = threadpool_create(threads, queue_size, 0);
 
 #ifdef PROFILE
     START_SW(map_time);

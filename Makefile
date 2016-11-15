@@ -69,7 +69,7 @@ check: $(TESTS)
 	done
 
 sort: tests/sort
-	./tests/sort 50000
+	./tests/sort 64 255 50000
 	sort -n input.txt > check.txt
 	diff output.txt check.txt
 
