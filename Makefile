@@ -42,6 +42,9 @@ tests/%: tests/%.c $(OBJS)
 tests/list.o: tests/list.c
 	$(CC) $(CFLAGS) -o $@ -MMD -MF $@.d -c $<
 
+tests/input_generator: tests/input_generator.c
+	$(CC) $(CFLAGS) -o $@ $^
+
 tests/sort: tests/sort.c $(OBJS) $(SORT_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
@@ -59,7 +62,8 @@ $(LIBNAME)$(STATIC_SUFFIX): $(OBJS)
 	$(AR) rcs $@ $^
 
 clean:
-	rm -f $(TARGETS) *~ */*~ $(OBJS) $(SORT_OBJS) $(TESTS) $(deps) core $(SORT_DATA)
+	rm -f $(TARGETS) *~ */*~ $(OBJS) $(SORT_OBJS) \
+		$(TESTS) tests/input_generator $(deps) core $(SORT_DATA)
 
 test: $(TESTS)
 check: $(TESTS)
@@ -68,8 +72,9 @@ check: $(TESTS)
 		echo "Execute $$test..." ; $$test && echo "OK!\n" ; \
 	done
 
-sort: tests/sort
-	./tests/sort input.txt 16 255
+sort: tests/sort tests/input_generator
+	./tests/input_generator 10000 10000
+	./tests/sort input.txt 64 255
 	@sort -n input.txt > check.txt
 	@diff output.txt check.txt && echo "sort testing succeed !"
 
