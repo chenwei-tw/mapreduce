@@ -30,7 +30,9 @@ SORT_OBJS := \
 SORT_DATA := \
 	input.txt \
 	output.txt \
-	check.txt
+	check.txt \
+	sort_bench_*.txt \
+	sort_bench_*.csv
 
 deps := $(OBJS:%.o=%.o.d)
 src/%.o: src/%.c
@@ -77,5 +79,23 @@ sort: tests/sort tests/input_generator
 	./tests/sort input.txt 64 255
 	@sort -n input.txt > check.txt
 	@diff output.txt check.txt && echo "sort testing succeed !"
+
+sort_bench: tests/sort tests/input_generator
+	rm sort_bench_*.txt sort_bench_*.csv \
+		|| echo "sort data has been empty" \
+		&& echo "clean sort data"
+	@for i in `seq 100 100 300`; do \
+		./tests/input_generator $$i 10000; \
+		for j in 1 2 4 8 16 32 64 128 256 512 1024; do \
+			echo sort $$i datas in input.txt with $$j thread, 256 queue_size ; \
+			echo "[sort_num] $$i" >> sort_bench_$$j.txt ; \
+			./tests/sort input.txt $$j 256 2>> sort_bench_$$j.txt ; \
+		done; \
+	done
+	@for i in 1 2 4 8 16 32 64 128 256 512 1024; do \
+		./scripts/sort_bench_parse.py sort_bench_$$i.txt; \
+	done
+	gnuplot ./scripts/sort_runtime.gp
+
 
 -include $(deps)
