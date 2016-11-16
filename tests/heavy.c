@@ -2,12 +2,13 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <assert.h>
+#include <stdatomic.h>
 
 #include "threadpool.h"
 
 #define THREAD 4
 #define SIZE   8192
-#define QUEUES 64
+#define QUEUES 4
 
 /*
  * Warning do not increase THREAD and QUEUES too much on 32-bit
@@ -16,22 +17,20 @@
  * Linux), you'll quickly run out of virtual space.
  */
 
-threadpool_t *pool[QUEUES];
+void *pool[QUEUES];
 int tasks[SIZE], left;
-pthread_mutex_t lock;
 
 int error;
 
-void dummy_task(void *arg) {
+void dummy_task(void *arg)
+{
     int *pi = (int *)arg;
     *pi += 1;
 
     if(*pi < QUEUES) {
-        assert(threadpool_add(pool[*pi], &dummy_task, arg, 0) == 0);
+        assert(tpool_add_work(pool[*pi], &dummy_task, arg) == 0);
     } else {
-        pthread_mutex_lock(&lock);
-        left--;
-        pthread_mutex_unlock(&lock);
+        atomic_fetch_sub(&left, 1);
     }
 }
 
@@ -40,10 +39,9 @@ int main(int argc, char **argv)
     int i, copy = 1;
 
     left = SIZE;
-    pthread_mutex_init(&lock, NULL);
 
     for(i = 0; i < QUEUES; i++) {
-        pool[i] = threadpool_create(THREAD, SIZE, 0);
+        pool[i] = tpool_init(THREAD);
         assert(pool[i] != NULL);
     }
 
@@ -51,21 +49,17 @@ int main(int argc, char **argv)
 
     for(i = 0; i < SIZE; i++) {
         tasks[i] = 0;
-        assert(threadpool_add(pool[0], &dummy_task, &(tasks[i]), 0) == 0);
+        assert(tpool_add_work(pool[0], &dummy_task, &(tasks[i])) == 0);
     }
 
     while(copy > 0) {
-        usleep(10);
-        pthread_mutex_lock(&lock);
-        copy = left;
-        pthread_mutex_unlock(&lock);
+        usleep(1);
+        atomic_store(&copy, left);
     }
 
     for(i = 0; i < QUEUES; i++) {
-        assert(threadpool_destroy(pool[i], 0) == 0);
+        tpool_destroy(pool[i], 0);
     }
-
-    pthread_mutex_destroy(&lock);
 
     return 0;
 }

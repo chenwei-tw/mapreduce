@@ -113,7 +113,7 @@ void my_finish(void *self, void *first_element)
 
 int main(int argc, char *argv[])
 {
-    threadpool_t *pool;
+    void *pool;
     llist_t *raw_data;
     llist_t **input_data;
     llist_t *output_data;
@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
     llist_destroy(raw_data);
 
 
-    pool = threadpool_create(threads, queue_size, 0);
+    pool = tpool_init(threads);
 
 #ifdef PROFILE
     START_SW(map_time);
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
     STOP_SW(reduce_time);
 #endif
 
-    threadpool_destroy(pool, threadpool_graceful);
+    tpool_destroy(pool, 0);
 
     for (i = 0; i < data_size; ++i) {
         // nodes have been moved to output_data
