@@ -13,6 +13,10 @@ typedef struct llist {
 
 llist_t *llist_create();
 int llist_add(llist_t *list, int data);
+int llist_pop_front(llist_t *list);
+int llist_size(llist_t *list);
+
+void llist_print(llist_t *list);
 void llist_destroy(llist_t *list);
 
 #endif

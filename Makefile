@@ -69,8 +69,8 @@ check: $(TESTS)
 	done
 
 sort: tests/sort
-	./tests/sort 64 255 50000
-	sort -n input.txt > check.txt
-	diff output.txt check.txt
+	./tests/sort input.txt 16 255
+	@sort -n input.txt > check.txt
+	@diff output.txt check.txt && echo "sort testing succeed !"
 
 -include $(deps)

@@ -13,6 +13,8 @@ DEF_SW(map_time)
 DEF_SW(reduce_time)
 #endif
 
+#define BUFF_SIZE 16
+
 void my_map(int n, void *data)
 {
     // empty
@@ -112,40 +114,61 @@ void my_finish(void *self, void *first_element)
 int main(int argc, char *argv[])
 {
     threadpool_t *pool;
-    llist_t **data;
+    llist_t *raw_data;
+    llist_t **input_data;
     llist_t *output_data;
+
     FILE *input_fptr;
+    char buffer[BUFF_SIZE];
+
     int i;
 
     if (argc != 4) {
-        fprintf(stderr, "./sort [thread_counts] [queue_size] [data_size]\n");
+        fprintf(stderr, "./sort [input.txt] [thread_counts] [queue_size]\n");
         return -1;
     }
 
-    const int threads = atoi(argv[1]);
-    const int queue_size = atoi(argv[2]);
-    const int data_size = atoi(argv[3]);
+    const char *input_file = argv[1];
+    const int threads = atoi(argv[2]);
+    const int queue_size = atoi(argv[3]);
 
-    data = malloc(data_size * sizeof(llist_t *));
-    srand(time(NULL));
-    for (i = 0; i < data_size; ++i) {
-        data[i] = llist_create();
-        llist_add(data[i], rand()%data_size+1);
-    }
+    raw_data = llist_create();
 
     output_data = llist_create();
 
-    input_fptr = fopen("input.txt", "w");
+    // read and store into raw_data
+    input_fptr = fopen(input_file, "r");
 
-    for (i = 0; i < data_size; ++i) {
-        node_t *node = data[i]->head;
-        while (node) {
-            fprintf(input_fptr, "%d\n", node->data);
-            node = node->next;
+    if (input_fptr == NULL) {
+        fprintf(stderr, "open file failed\n");
+        return -1;
+    }
+
+    while (fgets(buffer, BUFF_SIZE, input_fptr)) {
+        i = 0;
+        while (buffer[i] != '\n' && i < 15) {
+            i++;
         }
+        buffer[i] = '\0';
+        llist_add(raw_data, atoi(buffer));
     }
 
     fclose(input_fptr);
+
+    const int data_size = llist_size(raw_data);
+
+    // move raw_data to input_data
+    input_data = (llist_t **)malloc(data_size*sizeof(llist_t *));
+
+    for (i = 0; i < data_size; ++i) {
+        int pop_data = llist_pop_front(raw_data);
+
+        input_data[i] = llist_create();
+        llist_add(input_data[i], pop_data);
+    }
+
+    llist_destroy(raw_data);
+
 
     pool = threadpool_create(threads, queue_size, 0);
 
@@ -153,15 +176,15 @@ int main(int argc, char *argv[])
     START_SW(map_time);
 #endif
 
-    threadpool_map(pool, data_size, my_map, data, 0);
+    threadpool_map(pool, data_size, my_map, input_data, 0);
 
 #ifdef PROFILE
     STOP_SW(map_time);
 #endif
 
     threadpool_reduce_t reduce = {
-        .begin = data,
-        .end = data + data_size,
+        .begin = input_data,
+        .end = input_data + data_size,
         .object_size = sizeof(llist_t *),
         .self = output_data,
         .reduce = my_reduce,
@@ -184,9 +207,9 @@ int main(int argc, char *argv[])
 
     for (i = 0; i < data_size; ++i) {
         // nodes have been moved to output_data
-        llist_destroy(data[i]);
+        llist_destroy(input_data[i]);
     }
-    free(data);
+    free(input_data);
 
     FILE *output_fptr;
     node_t *node;
