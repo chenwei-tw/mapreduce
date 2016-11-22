@@ -23,12 +23,12 @@ void is_simple(int n, void *_data)
     START_SW(simple_time);
 #endif
 
-    int *data = (int *) _data;
-    int x = data[n];
+    long *data = (long *) _data;
+    long x = data[n];
     data[n] = 0;
     if (x < 2) return;
     if ((x & ~3) && !(x & 1)) return;
-    for (int i = 3; i * i <= x; i += 2)
+    for (long i = 3; i * i <= x; i += 2)
         if (x % i == 0) return;
     data[n] = x;
 
@@ -40,12 +40,12 @@ void is_simple(int n, void *_data)
 
 void my_reduce(void *self, void *left, void *right)
 {
-    *((int *) left) += *((int *) right);
+    *((long *) left) += *((long *) right);
 }
 
 void *my_alloc_neutral(void *self)
 {
-    int *c = malloc(sizeof(int));
+    long *c = malloc(sizeof(long));
     *c = 0;
     return c;
 }
@@ -57,7 +57,7 @@ void my_free(void *self, void *node)
 
 void my_finish(void *self, void *node)
 {
-    printf("reduce result = %d\n", *(int *) node);
+    printf("reduce result = %ld\n", *(long *) node);
 }
 
 int main(int argc, char *argv[])
@@ -68,8 +68,8 @@ int main(int argc, char *argv[])
     fprintf(stderr, "Pool started with %d threads and "
             "queue size of %d\n", THREAD, QUEUE);
 
-    int *data = malloc(DATASIZE * sizeof(int));
-    for (int i = 0; i < DATASIZE; i++)
+    long *data = malloc(DATASIZE * sizeof(long));
+    for (long i = 0; i < DATASIZE; i++)
         data[i] = i + 1;
 
 #ifdef PROFILE

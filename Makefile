@@ -34,7 +34,7 @@ TESTS =
 #TESTS += tests/shutdown
 #TESTS += tests/thrdtest
 #TESTS += tests/heavy
-TESTS += tests/mapreduce
+TESTS += tests/is_simple
 
 $(LIBNAME)$(SHARED_SUFFIX): $(OBJS)
 	$(CC) -shared -o $@ $< ${LDLIBS}
