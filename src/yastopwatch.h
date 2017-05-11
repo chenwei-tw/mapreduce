@@ -117,12 +117,6 @@ struct __stopwatch__ {
     __SW(name).last = 0;                             \
     __SW(name).sum = 0;                              \
     __SW(name).count = 0;                            \
-    if(__TYPE(name) == THREADED) {                      \
-        __SW(name).pcount = 0;                       \
-        __SW(name).psum = 0;                         \
-        __GLOBAL__SW(name).sum = 0;                  \
-        __GLOBAL__SW(name).count = 0;                \
-    }                                                   \
 }
 
 #define GET_TIME(name) (__TYPE(name) == THREADED ? (__SW(name).opaque)->sum : __SW(name).sum)

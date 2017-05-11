@@ -44,9 +44,13 @@ void my_finish(void *self, void *node)
 
 int main(int argc, char *argv[])
 {
-    DEF_SW(total_time);
-    DEF_SW(map_time);
-    DEF_SW(reduce_time);
+    DEF_SW(total_time); 
+    DEF_SW(map_time); 
+    DEF_SW(reduce_time); 
+
+    RESET_SW(total_time);
+    RESET_SW(map_time);
+    RESET_SW(reduce_time);
 
     threadpool_t *pool;
 
