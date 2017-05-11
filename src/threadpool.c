@@ -366,6 +366,8 @@ static void threadpool_reduce_thread(void *arg)
     int additional_items = info->size - end * info->task_num;
     int start = end * n;
 
+    printf("[start] reduce task %d\n", n);
+
     if (n <= additional_items)	{
         start += n;
         if (n < additional_items) end++;
@@ -382,6 +384,8 @@ static void threadpool_reduce_thread(void *arg)
                                (char *) info->userdata->begin +
                                start * info->userdata->object_size);
 	}
+
+    printf("[end] reduce task %d\n", n);
     sem_post(&info->done_indicator);
 }
 
@@ -393,6 +397,8 @@ static void threadpool_map_thread(void *arg)
     int end = map->size / task_num;
     int additional_items = map->size - end * task_num;
     int start = end * id;
+
+    printf("[start] map task %d\n", id);
 	
     if (id <= additional_items)	{
         start += id;
@@ -406,6 +412,7 @@ static void threadpool_map_thread(void *arg)
     for (; start < end; start++)
         map->routine(start, map->arg);
 
+    printf("[end] map task %d\n", id);
     *(int *) arg = -1;
     sem_post(&map->done_indicator);	
 }
