@@ -347,21 +347,13 @@ int threadpool_reduce(threadpool_t *pool, threadpool_reduce_t *reduce)
 static void threadpool_reduce_thread(int n, void *arg)
 {
     reduce_t_internal *info = (reduce_t_internal *) arg;
-    int end = info->size / info->thread_count;
-    int additional_items = info->size - end * info->thread_count;
-    int start = end * n;
-
-    if (n <= additional_items)	{
-        start += n;
-        if (n < additional_items) end++;
-    } else {
-        start += additional_items;
-    }
-    end += start;
+    int start = n;
+    int end = info->size;
+    int delta = info->thread_count;
 
     info->elements[n] = info->userdata->reduce_alloc_neutral(info->userdata);
 
-    for (; start < end; start++) {
+    for (; start < end; start += delta) {
         info->userdata->reduce(info->userdata->self, info->elements[n],
                                (char *) info->userdata->begin +
                                start * info->userdata->object_size);
@@ -372,19 +364,11 @@ static void threadpool_map_thread(void *arg)
 {
     int id = *(int *) arg;
     threadpool_map_t *map = (threadpool_map_t *) ((int *) arg - id);
-    int end = map->size / map->thread_count;
-    int additional_items = map->size - end * map->thread_count;
-    int start = end * id;
+    int start = id;
+    int end = map->size;
+    int delta = map->thread_count;
 
-    if (id <= additional_items)	{
-        start += id;
-        if (id < additional_items) end++;
-    } else {
-        start += additional_items;
-    }
-    end += start;
-
-    for (; start < end; start++)
+    for (; start < end; start += delta)
         map->routine(start, map->arg);
 
     sem_post(&map->done_indicator);
