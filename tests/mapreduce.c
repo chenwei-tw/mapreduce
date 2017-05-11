@@ -1,11 +1,13 @@
 #define THREAD 8
 #define QUEUE  256
-#define DATASIZE (20000)
+#define DATASIZE (200000)
+#define MAP_TASK_NUM 16
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include "threadpool.h"
+#include "yastopwatch.h"
 
 void is_simple(int n, void *_data)
 {
@@ -42,8 +44,13 @@ void my_finish(void *self, void *node)
 
 int main(int argc, char *argv[])
 {
+    DEF_SW(total_time);
+    DEF_SW(map_time);
+    DEF_SW(reduce_time);
+
     threadpool_t *pool;
 
+    START_SW(total_time);
     pool = threadpool_create(THREAD, QUEUE, 0);
     fprintf(stderr, "Pool started with %d threads and "
             "queue size of %d\n", THREAD, QUEUE);
@@ -52,7 +59,9 @@ int main(int argc, char *argv[])
     for (int i = 0; i < DATASIZE; i++)
         data[i] = i + 1;
 
-    threadpool_map(pool, DATASIZE, 16, is_simple, data, 0);
+    START_SW(map_time);
+    threadpool_map(pool, DATASIZE, MAP_TASK_NUM, is_simple, data, 0);
+    STOP_SW(map_time);
     //for (int i = 0; i < DATASIZE; i++)
     //    printf("%c", !!data[i] ? '-' : ' ');
     //printf("\n");
@@ -68,7 +77,14 @@ int main(int argc, char *argv[])
         .reduce_free = my_free,
     };
 
-    threadpool_reduce(pool, &reduce);
+	START_SW(reduce_time);
+	threadpool_reduce(pool, &reduce);
+	STOP_SW(reduce_time);
+	
+    STOP_SW(total_time);
 
-    return 0;
+	fprintf(stderr, "[map] Total time: %lf sec\n", GET_SEC(map_time));
+	fprintf(stderr, "[reduce] Total time: %lf sec\n", GET_SEC(reduce_time));
+	fprintf(stderr, "[total] Total time: %lf sec\n", GET_SEC(total_time));
+	return 0;
 }
