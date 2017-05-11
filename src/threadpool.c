@@ -273,29 +273,29 @@ typedef struct {
     void(*routine)(int n, void *);
     void *arg;
     int size;
-    int thread_count;
+    int task_num;
     sem_t done_indicator;
 } threadpool_map_t;
 
 static void threadpool_map_thread(void *arg);
 
-int threadpool_map(threadpool_t *pool, int size, void(*routine)(int n, void *),
+int threadpool_map(threadpool_t *pool, int size, int task_num, void(*routine)(int n, void *),
 	void *arg, int flags)
 {
     threadpool_error_t err = 0;
     threadpool_map_t map = {
         .routine = routine,
         .arg = arg,
-        .thread_count = pool->thread_count,
         .size = size,
+        .task_num = task_num,
     };
 
     sem_init(&map.done_indicator, 0, 0);
 	
-    for (int i = 0; i < pool->thread_count; i++)
+    for (int i = 0; i < task_num; i++)
         map.personal_pointers[i] = i;
 
-    for (int i = 0; i < pool->thread_count; i++) {
+    for (int i = 0; i < task_num; i++) {
         threadpool_error_t _err = threadpool_add(pool, threadpool_map_thread,
                                                  &map.personal_pointers[i],
                                                  flags);
@@ -306,7 +306,7 @@ int threadpool_map(threadpool_t *pool, int size, void(*routine)(int n, void *),
         }
     }
 
-    for (int i = 0; i < pool->thread_count; i++)
+    for (int i = 0; i < task_num; i++)
         sem_wait(&map.done_indicator);
 
     sem_destroy(&map.done_indicator);
@@ -331,7 +331,7 @@ int threadpool_reduce(threadpool_t *pool, threadpool_reduce_t *reduce)
         .userdata = reduce,
     };
 
-    int err = threadpool_map(pool, pool->thread_count, threadpool_reduce_thread, &info, 0);
+    int err = threadpool_map(pool, pool->thread_count, pool->thread_count, threadpool_reduce_thread, &info, 0);
     if (err) return err;
 
     for (int i = 1; i < pool->thread_count; i++) {
@@ -373,8 +373,9 @@ static void threadpool_map_thread(void *arg)
 {
     int id = *(int *) arg;
     threadpool_map_t *map = (threadpool_map_t *) ((int *) arg - id);
-    int end = map->size / map->thread_count;
-    int additional_items = map->size - end * map->thread_count;
+    int task_num = map->task_num;
+    int end = map->size / task_num;
+    int additional_items = map->size - end * task_num;
     int start = end * id;
 	
     if (id <= additional_items)	{

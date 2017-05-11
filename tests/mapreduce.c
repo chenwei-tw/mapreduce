@@ -52,10 +52,10 @@ int main(int argc, char *argv[])
     for (int i = 0; i < DATASIZE; i++)
         data[i] = i + 1;
 
-    threadpool_map(pool, DATASIZE, is_simple, data, 0);
-    for (int i = 0; i < DATASIZE; i++)
-        printf("%c", !!data[i] ? '-' : ' ');
-    printf("\n");
+    threadpool_map(pool, DATASIZE, 16, is_simple, data, 0);
+    //for (int i = 0; i < DATASIZE; i++)
+    //    printf("%c", !!data[i] ? '-' : ' ');
+    //printf("\n");
 
     threadpool_reduce_t reduce = {
         .begin = data,
