@@ -124,6 +124,11 @@ typedef struct {
     void *self;
 } threadpool_reduce_t;
 
+int mapreduce(threadpool_t *pool, int size, int task_num,
+              void (*routine)(int n, void *),
+              void *arg, int flags,
+              threadpool_reduce_t *reduce);
+
 /**
 * @function threadpool_reduce
 * @brief parallel blocking reduce

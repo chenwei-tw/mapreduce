@@ -277,10 +277,21 @@ typedef struct {
     sem_t done_indicator;
 } threadpool_map_t;
 
+typedef struct {
+    int personal_pointers[THREADS_MAX];
+    threadpool_reduce_t *userdata;
+    int size;
+    int task_num;
+    void *elements[THREADS_MAX];
+    sem_t done_indicator;
+} reduce_t_internal;
+
 static void threadpool_map_thread(void *arg);
 
-int threadpool_map(threadpool_t *pool, int size, int task_num, void(*routine)(int n, void *),
-	void *arg, int flags)
+static void threadpool_reduce_thread(void *arg);
+
+int mapreduce(threadpool_t *pool, int size, int task_num, void (*routine)(int n, void *), void *arg, int flags, 
+              threadpool_reduce_t *reduce)
 {
     threadpool_error_t err = 0;
     threadpool_map_t map = {
@@ -290,10 +301,20 @@ int threadpool_map(threadpool_t *pool, int size, int task_num, void(*routine)(in
         .task_num = task_num,
     };
 
+    reduce_t_internal info = {                                                                           
+        .size = ((char *) reduce->end -
+                (char *) reduce->begin) / reduce->object_size,
+        .task_num = task_num,
+        .userdata = reduce,
+    };
+
     sem_init(&map.done_indicator, 0, 0);
-	
-    for (int i = 0; i < task_num; i++)
+	sem_init(&info.done_indicator, 0, 0);
+
+    for (int i = 0; i < task_num; i++) {
         map.personal_pointers[i] = i;
+        info.personal_pointers[i] = i;
+    }
 
     for (int i = 0; i < task_num; i++) {
         threadpool_error_t _err = threadpool_add(pool, threadpool_map_thread,
@@ -302,39 +323,32 @@ int threadpool_map(threadpool_t *pool, int size, int task_num, void(*routine)(in
         /* FIXME: check errors correctly */
         if (_err) {
             err = _err;
-            sem_post(&map.done_indicator);
+            return err;
+        }
+    }
+
+    /* Wait completed map task, add corresponding reduce task into queue */
+    for (int i = 0; i < task_num; i++) {
+        sem_wait(&map.done_indicator);
+        for (int j = 0; j < task_num; j++) {
+            if (map.personal_pointers[j] == -1) {
+                /* add reduce task j */
+                threadpool_error_t _err = threadpool_add(pool, threadpool_reduce_thread,
+                               &info.personal_pointers[j], flags);
+                map.personal_pointers[j] = -2;
+                if (_err) {
+                    err = _err;
+                    return err;
+                }
+                break;
+            }
         }
     }
 
     for (int i = 0; i < task_num; i++)
-        sem_wait(&map.done_indicator);
-
-    sem_destroy(&map.done_indicator);
-    return err;
-}
-
-typedef struct {
-    threadpool_reduce_t *userdata;
-    int size;
-    int thread_count;
-    void *elements[THREADS_MAX];
-} reduce_t_internal;
-
-static void threadpool_reduce_thread(int n, void *arg);
-
-int threadpool_reduce(threadpool_t *pool, threadpool_reduce_t *reduce)
-{
-    reduce_t_internal info = {
-        .size = ((char *) reduce->end -
-                 (char *) reduce->begin) / reduce->object_size,
-        .thread_count = pool->thread_count,
-        .userdata = reduce,
-    };
-
-    int err = threadpool_map(pool, pool->thread_count, pool->thread_count, threadpool_reduce_thread, &info, 0);
-    if (err) return err;
-
-    for (int i = 1; i < pool->thread_count; i++) {
+        sem_wait(&info.done_indicator);
+    
+    for (int i = 1; i < task_num; i++) {
         info.userdata->reduce(info.userdata->self,
                               info.elements[0], info.elements[i]);
         info.userdata->reduce_free(info.userdata->self, info.elements[i]);
@@ -344,11 +358,12 @@ int threadpool_reduce(threadpool_t *pool, threadpool_reduce_t *reduce)
     return 0;
 }
 
-static void threadpool_reduce_thread(int n, void *arg)
+static void threadpool_reduce_thread(void *arg)
 {
-    reduce_t_internal *info = (reduce_t_internal *) arg;
-    int end = info->size / info->thread_count;
-    int additional_items = info->size - end * info->thread_count;
+    int n = * (int *) arg;
+    reduce_t_internal *info = (reduce_t_internal *) ((int *) arg - n);
+    int end = info->size / info->task_num;
+    int additional_items = info->size - end * info->task_num;
     int start = end * n;
 
     if (n <= additional_items)	{
@@ -367,6 +382,7 @@ static void threadpool_reduce_thread(int n, void *arg)
                                (char *) info->userdata->begin +
                                start * info->userdata->object_size);
 	}
+    sem_post(&info->done_indicator);
 }
 
 static void threadpool_map_thread(void *arg)
@@ -390,6 +406,7 @@ static void threadpool_map_thread(void *arg)
     for (; start < end; start++)
         map->routine(start, map->arg);
 
+    *(int *) arg = -1;
     sem_post(&map->done_indicator);	
 }
 
