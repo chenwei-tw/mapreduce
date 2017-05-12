@@ -39,6 +39,9 @@ $(LIBNAME)$(SHARED_SUFFIX): $(OBJS)
 $(LIBNAME)$(STATIC_SUFFIX): $(OBJS)
 	$(AR) rcs $@ $^
 
+plot: opt.txt
+	gnuplot scripts/runtime.gp
+
 clean:
 	rm -f $(TARGETS) *~ */*~ $(OBJS) $(TESTS) $(deps)
 
