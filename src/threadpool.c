@@ -32,6 +32,7 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <semaphore.h>
@@ -327,14 +328,14 @@ int mapreduce(threadpool_t *pool, int size, int task_num, void (*routine)(int n,
         }
     }
 
-    /* Wait completed map task, add corresponding reduce task into queue */
+    /* Once some map task completes, corresponding reduce task will be added into task queue */
     for (int i = 0; i < task_num; i++) {
         sem_wait(&map.done_indicator);
         for (int j = 0; j < task_num; j++) {
             if (map.personal_pointers[j] == -1) {
                 /* add reduce task j */
                 threadpool_error_t _err = threadpool_add(pool, threadpool_reduce_thread,
-                               &info.personal_pointers[j], flags);
+                                                         &info.personal_pointers[j], flags);
                 map.personal_pointers[j] = -2;
                 if (_err) {
                     err = _err;
@@ -345,9 +346,11 @@ int mapreduce(threadpool_t *pool, int size, int task_num, void (*routine)(int n,
         }
     }
 
+    /* Wait all reduce tasks completed */
     for (int i = 0; i < task_num; i++)
         sem_wait(&info.done_indicator);
     
+    /* Merge result of reduce tasks */
     for (int i = 1; i < task_num; i++) {
         info.userdata->reduce(info.userdata->self,
                               info.elements[0], info.elements[i]);
