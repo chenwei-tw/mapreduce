@@ -14,7 +14,8 @@ pthread_mutex_t lock;
 
 int error;
 
-void dummy_task(void *arg) {
+void dummy_task(void *arg)
+{
     usleep(100);
     pthread_mutex_lock(&lock);
     left--;

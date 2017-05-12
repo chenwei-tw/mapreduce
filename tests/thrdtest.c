@@ -11,7 +11,8 @@
 int tasks = 0, done = 0;
 pthread_mutex_t lock;
 
-void dummy_task(void *arg) {
+void dummy_task(void *arg)
+{
     usleep(10000);
     pthread_mutex_lock(&lock);
     done++;

@@ -1,6 +1,5 @@
 #define THREAD 8
 #define QUEUE  256
-#define DATASIZE (200000)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -43,51 +42,72 @@ void my_finish(void *self, void *node)
 
 int main(int argc, char *argv[])
 {
-    DEF_SW(total_time); 
-    DEF_SW(map_time); 
-    DEF_SW(reduce_time); 
+    FILE *output = fopen("orig.txt", "w");
+
+    DEF_SW(total_time);
+    //DEF_SW(map_time);
+    //DEF_SW(reduce_time);
 
     RESET_SW(total_time);
-    RESET_SW(map_time);
-    RESET_SW(reduce_time);
+    //RESET_SW(map_time);
+    //RESET_SW(reduce_time);
 
     threadpool_t *pool;
+    int datasize = 0;
+    double time_sum = 0, time_avg = 0;
 
-    START_SW(total_time);
-    pool = threadpool_create(THREAD, QUEUE, 0);
-    fprintf(stderr, "Pool started with %d threads and "
-            "queue size of %d\n", THREAD, QUEUE);
+    for(datasize = 20000; datasize < 100000; datasize += 800) {
+        int *data = malloc(datasize * sizeof(int));
+        for(int turn = 0; turn < 30; turn++) {
+            START_SW(total_time);
+            pool = threadpool_create(THREAD, QUEUE, 0);
+            //fprintf(stderr, "Pool started with %d threads and queue size of %d\n", THREAD, QUEUE);
 
-    int *data = malloc(DATASIZE * sizeof(int));
-    for (int i = 0; i < DATASIZE; i++)
-        data[i] = i + 1;
+            for(int i = 0; i < datasize; i++)
+                data[i] = i + 1;
 
-    START_SW(map_time);
-    threadpool_map(pool, DATASIZE, is_simple, data, 0);
-    STOP_SW(map_time);
-    //for (int i = 0; i < DATASIZE; i++)
-    //    printf("%c", !!data[i] ? '-' : ' ');
-    //printf("\n");
+            //START_SW(map_time);
+            threadpool_map(pool, datasize, is_simple, data, 0);
+            //STOP_SW(map_time);
 
-    threadpool_reduce_t reduce = {
-        .begin = data,
-        .end = data + DATASIZE,
-        .object_size = sizeof(*data),
-        .self = NULL,
-        .reduce = my_reduce,
-        .reduce_alloc_neutral = my_alloc_neutral,
-        .reduce_finish = my_finish,
-        .reduce_free = my_free,
-    };
+            //for (int i = 0; i < DATASIZE; i++)
+            //printf("%c", !!data[i] ? '-' : ' ');
+            //printf("\n");
 
-	START_SW(reduce_time);
-	threadpool_reduce(pool, &reduce);
-	STOP_SW(reduce_time);
-	
-    STOP_SW(total_time);
+            threadpool_reduce_t reduce = {
+                .begin = data,
+                .end = data + datasize,
+                .object_size = sizeof(*data),
+                .self = NULL,
+                .reduce = my_reduce,
+                .reduce_alloc_neutral = my_alloc_neutral,
+                .reduce_finish = my_finish,
+                .reduce_free = my_free,
+            };
 
-	fprintf(stderr, "[map] Total time: %lf sec\n", GET_SEC(map_time));
-	fprintf(stderr, "[reduce] Total time: %lf sec\n", GET_SEC(reduce_time));
-	fprintf(stderr, "[total] Total time: %lf sec\n", GET_SEC(total_time));
-	return 0;
+            //START_SW(reduce_time);
+            threadpool_reduce(pool, &reduce);
+            //STOP_SW(reduce_time);
+
+            STOP_SW(total_time);
+
+            //fprintf(stderr, "[map] Total time: %lf sec\n", GET_SEC(map_time));
+            //fprintf(stderr, "[reduce] Total time: %lf sec\n", GET_SEC(reduce_time));
+            //fprintf(stderr, "[total] Total time: %lf sec\n", GET_SEC(total_time));
+
+            time_sum += GET_SEC(total_time);
+
+            RESET_SW(total_time);
+            //RESET_SW(map_time);
+            //RESET_SW(reduce_time);
+            threadpool_destroy(pool, 0);
+        }
+        time_avg = time_sum / 30.0;
+        fprintf(output,"%d %lf\n", datasize, time_avg);
+        free(data);
+        time_sum = 0;
+        time_avg = 0;
+    }
+    fclose(output);
+    return 0;
 }

@@ -6,3 +6,6 @@
 tests/heavy
 tests/shutdown
 tests/thrdtest
+tests/mapreduce
+*.png
+*.txt
