@@ -37,7 +37,7 @@ void my_free(void *self, void *node)
 
 void my_finish(void *self, void *node)
 {
-    printf("reduce result = %d\n", *(int *) node);
+    //printf("reduce result = %d\n", *(int *) node);
 }
 
 int main(int argc, char *argv[])
@@ -58,6 +58,7 @@ int main(int argc, char *argv[])
 
     for(datasize = 20000; datasize < 100000; datasize += 800) {
         int *data = malloc(datasize * sizeof(int));
+        printf("completed percentage: %lf %\n", 100 * (datasize - 20000.0) / (100000.0 - 20000.0));
         for(int turn = 0; turn < 30; turn++) {
             START_SW(total_time);
             pool = threadpool_create(THREAD, QUEUE, 0);
