@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
 #include "threadpool.h"
 #include "yastopwatch.h"
 
@@ -15,7 +16,7 @@ void is_simple(int n, void *_data)
     int x = data[n];
     data[n] = 0;
     if (x < 2) return;
-    for (int i = 2; i < x; i++)
+    for (int i = 2; i <= x; i++)
         if (x % i == 0) return;
     data[n] = x;
 }
@@ -45,7 +46,6 @@ void my_finish(void *self, void *node)
 int main(int argc, char *argv[])
 {
     DEF_SW(total_time); 
-
     RESET_SW(total_time);
 
     threadpool_t *pool;
@@ -79,8 +79,6 @@ int main(int argc, char *argv[])
 	
     STOP_SW(total_time);
 
-	//fprintf(stderr, "[map] Total time: %lf sec\n", GET_SEC(map_time));
-	//fprintf(stderr, "[reduce] Total time: %lf sec\n", GET_SEC(reduce_time));
 	fprintf(stderr, "[total] Total time: %lf sec\n", GET_SEC(total_time));
 	return 0;
 }
