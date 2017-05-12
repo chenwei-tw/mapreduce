@@ -15,10 +15,22 @@ void is_simple(int n, void *_data)
     int *data = (int *) _data;
     int x = data[n];
     data[n] = 0;
-    if (x < 2) return;
-    for (int i = 2; i <= x; i++)
-        if (x % i == 0) return;
-    data[n] = x;
+   
+	if(x <= 1)
+		return;
+	else if (x <= 3) {
+		data[n] = x;
+		return;
+	} else if ( !(x % 2) || !(x % 3))
+		return;
+
+	long i = 5;
+	while (i * i <= x) {
+		if ( !(x % i) || !(x % (i + 2)))
+			return;
+		i = i + 6;
+	} 
+	data[n] = x;
 }
 
 void my_reduce(void *self, void *left, void *right)
