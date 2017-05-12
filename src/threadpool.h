@@ -83,21 +83,6 @@ int threadpool_add(threadpool_t *pool, void (*routine)(void *),
                    void *arg, int flags);
 
 /**
-* @function threadpool_map
-* @brief call     routine given number of times, blocks until all is done.
-* @param pool     Thread pool to which add the task.
-* @param size     number of times to call the function.
-* @param function Pointer to the function that will perform the task.
-* @param argument Argument to be passed to the function.
-* @param flags    Unused parameter.
-* @return 0       if all goes well, negative values in case of error
-*                 (@see threadpool_error_t for codes).
-*/
-int threadpool_map(threadpool_t *pool, int size, int task_num,
-                   void (*routine)(int n, void *),
-                   void *arg, int flags);
-
-/**
 * @struct threadpool_reduce_t
 * @brief arguments    for threadpool_reduce
 * @param reduce       perform reduce on 2 operands. save result in left
@@ -124,19 +109,23 @@ typedef struct {
     void *self;
 } threadpool_reduce_t;
 
+/**
+* @function mapreduce
+* @brief split problem in to several pieces for map and reduce.
+* @param pool Thread pool to add the task.
+* @param size Size of problem.
+* @param task_num Number of task which problem splits.
+* @param routine Map function to perform.
+* @param argument Argument for map function.
+* @param flags Unused parameters.
+* @param reduce Filled threadpool_reduce_t struct.
+* @return error code
+*/
+
 int mapreduce(threadpool_t *pool, int size, int task_num,
               void (*routine)(int n, void *),
               void *arg, int flags,
               threadpool_reduce_t *reduce);
-
-/**
-* @function threadpool_reduce
-* @brief parallel blocking reduce
-* @param pool  Thread pool to which add the task.
-* @param reduce  Filled threadpool_reduce_t struct.
-* @return error code
-*/
-int threadpool_reduce(threadpool_t *pool, threadpool_reduce_t *reduce);
 
 /**
  * @function threadpool_destroy
