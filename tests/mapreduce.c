@@ -38,7 +38,7 @@ void my_free(void *self, void *node)
 
 void my_finish(void *self, void *node)
 {
-    printf("reduce result = %d\n", *(int *) node);
+    //printf("reduce result = %d\n", *(int *) node);
 }
 
 int main(int argc, char *argv[])
@@ -57,15 +57,16 @@ int main(int argc, char *argv[])
     
     int datasize = 0;
     double time_sum = 0, time_avg = 0;
+    int count = 0;
     
     for(datasize = 20000; datasize < 100000; datasize += 800) {
         int *data = malloc(datasize * sizeof(int));    
+        printf("completed percentage: %d %\n", count++);
         for(int turn = 0; turn < 30; turn++) {
             START_SW(total_time);
             pool = threadpool_create(THREAD, QUEUE, 0);
             //fprintf(stderr, "Pool started with %d threads and queue size of %d\n", THREAD, QUEUE);
-
-    
+            system("echo 3 | sudo tee /proc/sys/vm/drop_caches");
             for (int i = 0; i < datasize; i++)
                 data[i] = i + 1;
 
