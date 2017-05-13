@@ -60,6 +60,7 @@ int main(int argc, char *argv[])
         int *data = malloc(datasize * sizeof(int));
         printf("completed percentage: %lf %\n", 100 * (datasize - 20000.0) / (100000.0 - 20000.0));
         for(int turn = 0; turn < 30; turn++) {
+            system("echo 3 | sudo tee /proc/sys/vm/drop_caches");
             START_SW(total_time);
             pool = threadpool_create(THREAD, QUEUE, 0);
             //fprintf(stderr, "Pool started with %d threads and queue size of %d\n", THREAD, QUEUE);
