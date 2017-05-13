@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
         for (int j = 0; j < SAMPLES; j++) {
             START_SW(total_time);
             pool = threadpool_create(THREAD, QUEUE, 0);
+            system("echo 3 | sudo tee /proc/sys/vm/drop_caches");
             for (int i = 0; i < DATASIZE; i++)
                 data[i] = i + 1;
 
