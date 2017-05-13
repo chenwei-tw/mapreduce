@@ -40,7 +40,7 @@ $(LIBNAME)$(STATIC_SUFFIX): $(OBJS)
 	$(AR) rcs $@ $^
 
 clean:
-	rm -f $(TARGETS) *~ */*~ $(OBJS) $(TESTS) $(deps)
+	rm -f $(TARGETS) *~ */*~ $(OBJS) $(TESTS) $(deps) *.txt
 
 test: check
 check: $(TESTS)
