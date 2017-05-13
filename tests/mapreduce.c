@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     DEF_SW(total_time); 
     RESET_SW(total_time);
 
-    FILE *fout = fopen("opt4.txt", "w");
+    FILE *fout = fopen("opt3.txt", "w");
     double time_sum = 0, time_avg = 0;
     int count = 0;
     threadpool_t *pool;
